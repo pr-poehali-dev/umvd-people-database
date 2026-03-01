@@ -1,28 +1,40 @@
-
+import { useState } from "react";
 import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import Index from "./pages/Index";
-import NotFound from "./pages/NotFound";
+import LoginPage from "./pages/LoginPage";
+import Dashboard from "./pages/Dashboard";
 
-const queryClient = new QueryClient();
+export type UserRole = "admin" | "employee";
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
+export interface CurrentUser {
+  id: string;
+  name: string;
+  role: UserRole;
+  rank: string;
+  department: string;
+}
+
+function App() {
+  const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
+
+  const handleLogin = (user: CurrentUser) => {
+    setCurrentUser(user);
+  };
+
+  const handleLogout = () => {
+    setCurrentUser(null);
+  };
+
+  return (
     <TooltipProvider>
       <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
+      {!currentUser ? (
+        <LoginPage onLogin={handleLogin} />
+      ) : (
+        <Dashboard user={currentUser} onLogout={handleLogout} />
+      )}
     </TooltipProvider>
-  </QueryClientProvider>
-);
+  );
+}
 
 export default App;
