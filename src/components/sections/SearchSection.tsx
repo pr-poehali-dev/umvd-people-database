@@ -30,7 +30,7 @@ const CATEGORY_STYLE: Record<string, string> = {
 
 const EMPTY_FORM = { name: "", dob: "", region: "", status: "Активный", category: "Гражданский" };
 
-export default function SearchSection({ user: _user }: SearchSectionProps) {
+export default function SearchSection({ user }: SearchSectionProps) {
   const [database, setDatabase] = useState<DbRecord[]>(INITIAL_DATABASE);
   const [query, setQuery] = useState("");
   const [filterStatus, setFilterStatus] = useState("Все");
@@ -110,14 +110,16 @@ export default function SearchSection({ user: _user }: SearchSectionProps) {
             <span className="text-border">|</span>
             <span>Всего в базе: <span className="text-foreground font-mono">{database.length}</span></span>
           </div>
-          <button
-            type="button"
-            onClick={() => setShowAddForm(true)}
-            className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground px-4 py-2 rounded-lg text-sm font-semibold transition-all"
-          >
-            <Icon name="UserPlus" size={15} />
-            Добавить человека
-          </button>
+          {user.role === "admin" && (
+            <button
+              type="button"
+              onClick={() => setShowAddForm(true)}
+              className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground px-4 py-2 rounded-lg text-sm font-semibold transition-all"
+            >
+              <Icon name="UserPlus" size={15} />
+              Добавить человека
+            </button>
+          )}
         </div>
       </div>
 
