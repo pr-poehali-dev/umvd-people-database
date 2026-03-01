@@ -6,7 +6,7 @@ interface SearchSectionProps {
   user: CurrentUser;
 }
 
-const MOCK_DATABASE = [
+const INITIAL_DATABASE = [
   { id: "ФС-001", name: "Смирнов Алексей Владимирович", dob: "12.03.1985", region: "Москва", status: "Активный", category: "Гражданский", lastUpdate: "15.01.2026" },
   { id: "ФС-002", name: "Козлова Елена Петровна", dob: "07.11.1990", region: "Санкт-Петербург", status: "Архив", category: "Гражданский", lastUpdate: "03.12.2025" },
   { id: "ФС-003", name: "Морозов Дмитрий Игоревич", dob: "22.06.1978", region: "Екатеринбург", status: "Активный", category: "Под наблюдением", lastUpdate: "20.01.2026" },
@@ -14,6 +14,8 @@ const MOCK_DATABASE = [
   { id: "ФС-005", name: "Новиков Павел Андреевич", dob: "31.01.1982", region: "Москва", status: "Ограничен", category: "Под наблюдением", lastUpdate: "05.02.2026" },
   { id: "ФС-006", name: "Захарова Ирина Дмитриевна", dob: "18.04.1988", region: "Новосибирск", status: "Активный", category: "Гражданский", lastUpdate: "12.02.2026" },
 ];
+
+type DbRecord = typeof INITIAL_DATABASE[0];
 
 const STATUS_STYLE: Record<string, string> = {
   "Активный": "text-green-400 bg-green-400/10 border-green-400/20",
@@ -26,13 +28,19 @@ const CATEGORY_STYLE: Record<string, string> = {
   "Под наблюдением": "text-yellow-400",
 };
 
+const EMPTY_FORM = { name: "", dob: "", region: "", status: "Активный", category: "Гражданский" };
+
 export default function SearchSection({ user: _user }: SearchSectionProps) {
+  const [database, setDatabase] = useState<DbRecord[]>(INITIAL_DATABASE);
   const [query, setQuery] = useState("");
   const [filterStatus, setFilterStatus] = useState("Все");
-  const [selectedRecord, setSelectedRecord] = useState<typeof MOCK_DATABASE[0] | null>(null);
+  const [selectedRecord, setSelectedRecord] = useState<DbRecord | null>(null);
   const [searched, setSearched] = useState(false);
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [newPerson, setNewPerson] = useState(EMPTY_FORM);
+  const [addSuccess, setAddSuccess] = useState(false);
 
-  const filtered = MOCK_DATABASE.filter((r) => {
+  const filtered = database.filter((r) => {
     const matchQuery =
       !query ||
       r.name.toLowerCase().includes(query.toLowerCase()) ||
@@ -45,6 +53,20 @@ export default function SearchSection({ user: _user }: SearchSectionProps) {
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     setSearched(true);
+  };
+
+  const handleAddPerson = (e: React.FormEvent) => {
+    e.preventDefault();
+    const today = new Date().toLocaleDateString("ru-RU");
+    const newId = `ФС-${String(database.length + 1).padStart(3, "0")}`;
+    const record: DbRecord = { id: newId, ...newPerson, lastUpdate: today };
+    setDatabase([record, ...database]);
+    setNewPerson(EMPTY_FORM);
+    setAddSuccess(true);
+    setTimeout(() => {
+      setAddSuccess(false);
+      setShowAddForm(false);
+    }, 1200);
   };
 
   return (
@@ -82,10 +104,20 @@ export default function SearchSection({ user: _user }: SearchSectionProps) {
             Найти
           </button>
         </form>
-        <div className="flex items-center gap-4 mt-3 text-xs text-muted-foreground">
-          <span className="font-mono">Найдено записей: <span className="text-foreground">{filtered.length}</span></span>
-          <span className="text-border">|</span>
-          <span>Всего в базе: <span className="text-foreground font-mono">14 832</span></span>
+        <div className="flex items-center justify-between mt-3">
+          <div className="flex items-center gap-4 text-xs text-muted-foreground">
+            <span className="font-mono">Найдено записей: <span className="text-foreground">{filtered.length}</span></span>
+            <span className="text-border">|</span>
+            <span>Всего в базе: <span className="text-foreground font-mono">{database.length}</span></span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setShowAddForm(true)}
+            className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground px-4 py-2 rounded-lg text-sm font-semibold transition-all"
+          >
+            <Icon name="UserPlus" size={15} />
+            Добавить человека
+          </button>
         </div>
       </div>
 
@@ -154,6 +186,120 @@ export default function SearchSection({ user: _user }: SearchSectionProps) {
           )}
         </div>
       </div>
+
+      {/* Add person modal */}
+      {showAddForm && (
+        <div
+          className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          onClick={() => setShowAddForm(false)}
+        >
+          <div
+            className="glass-card rounded-xl w-full max-w-md p-6 animate-slide-up"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-5">
+              <div>
+                <h3 className="text-base font-semibold text-foreground">Добавить человека</h3>
+                <p className="text-xs text-muted-foreground mt-0.5">Новая запись в базе данных</p>
+              </div>
+              <button onClick={() => setShowAddForm(false)} className="text-muted-foreground hover:text-foreground transition-colors">
+                <Icon name="X" size={18} />
+              </button>
+            </div>
+
+            {addSuccess ? (
+              <div className="flex flex-col items-center justify-center py-8 animate-fade-in">
+                <div className="w-12 h-12 rounded-full bg-green-400/10 border border-green-400/20 flex items-center justify-center mb-3">
+                  <Icon name="CheckCircle" size={24} className="text-green-400" />
+                </div>
+                <p className="text-sm font-medium text-foreground">Запись успешно добавлена</p>
+              </div>
+            ) : (
+              <form onSubmit={handleAddPerson} className="space-y-3">
+                <div>
+                  <label className="block text-xs text-muted-foreground mb-1.5 font-medium">ФИО <span className="text-destructive">*</span></label>
+                  <input
+                    type="text"
+                    value={newPerson.name}
+                    onChange={(e) => setNewPerson({ ...newPerson, name: e.target.value })}
+                    placeholder="Иванов Иван Иванович"
+                    required
+                    className="w-full bg-secondary/50 border border-border rounded-lg px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/30 transition-all"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs text-muted-foreground mb-1.5 font-medium">Дата рождения <span className="text-destructive">*</span></label>
+                    <input
+                      type="text"
+                      value={newPerson.dob}
+                      onChange={(e) => setNewPerson({ ...newPerson, dob: e.target.value })}
+                      placeholder="ДД.ММ.ГГГГ"
+                      required
+                      className="w-full bg-secondary/50 border border-border rounded-lg px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/30 transition-all"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-muted-foreground mb-1.5 font-medium">Регион <span className="text-destructive">*</span></label>
+                    <input
+                      type="text"
+                      value={newPerson.region}
+                      onChange={(e) => setNewPerson({ ...newPerson, region: e.target.value })}
+                      placeholder="Москва"
+                      required
+                      className="w-full bg-secondary/50 border border-border rounded-lg px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/30 transition-all"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs text-muted-foreground mb-1.5 font-medium">Категория</label>
+                    <select
+                      value={newPerson.category}
+                      onChange={(e) => setNewPerson({ ...newPerson, category: e.target.value })}
+                      className="w-full bg-secondary/50 border border-border rounded-lg px-3 py-2.5 text-sm text-foreground focus:outline-none focus:border-primary/50 transition-all cursor-pointer"
+                    >
+                      <option>Гражданский</option>
+                      <option>Под наблюдением</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs text-muted-foreground mb-1.5 font-medium">Статус</label>
+                    <select
+                      value={newPerson.status}
+                      onChange={(e) => setNewPerson({ ...newPerson, status: e.target.value })}
+                      className="w-full bg-secondary/50 border border-border rounded-lg px-3 py-2.5 text-sm text-foreground focus:outline-none focus:border-primary/50 transition-all cursor-pointer"
+                    >
+                      <option>Активный</option>
+                      <option>Ограничен</option>
+                      <option>Архив</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="flex gap-2 pt-3 border-t border-border">
+                  <button
+                    type="button"
+                    onClick={() => setShowAddForm(false)}
+                    className="flex-1 py-2.5 text-sm rounded-lg bg-secondary text-secondary-foreground border border-border hover:bg-secondary/80 transition-all"
+                  >
+                    Отмена
+                  </button>
+                  <button
+                    type="submit"
+                    className="flex-1 py-2.5 text-sm rounded-lg bg-primary text-primary-foreground font-semibold hover:bg-primary/90 transition-all flex items-center justify-center gap-2"
+                  >
+                    <Icon name="UserPlus" size={14} />
+                    Добавить
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Detail modal */}
       {selectedRecord && (
